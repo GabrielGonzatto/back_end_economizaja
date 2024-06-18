@@ -1,0 +1,20 @@
+package back_end_economizaja.model.cliente;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+public interface ClienteRepository extends JpaRepository<Cliente, Long> {
+
+    ArrayList<Cliente> findAll();
+
+
+    @Query(value = "select * from cliente where id=?1;", nativeQuery = true)
+    Cliente findById(Integer idcliente);
+
+    Cliente findByEmail(String email);
+
+}
