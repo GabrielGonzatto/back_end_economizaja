@@ -11,10 +11,9 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
     ArrayList<Cliente> findAll();
 
-
     @Query(value = "select * from cliente where id=?1;", nativeQuery = true)
     Cliente findById(Integer idcliente);
 
-    Cliente findByEmail(String email);
-
+    @Query(value = "select * from cliente where email=?1;", nativeQuery = true)
+    Cliente findByEmailAndPassword(String email);
 }

@@ -4,8 +4,7 @@ CREATE TABLE cliente (
                         segundo_nome varchar(70) not null,
                         cpf varchar(14) not null unique,
                         email varchar(100) not null unique,
-                        senha varchar(100) not null,
-                        role varchar(100)
+                        senha varchar(100) not null
 );
 
 CREATE TABLE categoria (

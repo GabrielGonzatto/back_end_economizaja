@@ -25,7 +25,6 @@ public class CategoriaController {
     @Transactional
     public ResponseEntity<CadastrarCategoriaDTO> cadastrar(@RequestBody @Valid CadastrarCategoriaDTO categoria){
         this.service.cadastrar(categoria);
-
         return ResponseEntity.ok().build();
     }
 

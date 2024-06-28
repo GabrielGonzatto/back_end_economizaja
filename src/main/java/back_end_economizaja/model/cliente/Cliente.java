@@ -40,8 +40,6 @@ public class Cliente{
     @NotBlank
     private String senha;
 
-    private ClienteRole role;
-
     @OneToMany(mappedBy = "cliente")
     @JsonIgnore
     private List<Categoria> categorias;
@@ -50,12 +48,11 @@ public class Cliente{
     @JsonIgnore
     private List<Receita> receitas;
 
-    public Cliente(String primeiro_nome, String segundo_nome, String cpf, String email, String senha, ClienteRole role) {
+    public Cliente(String primeiro_nome, String segundo_nome, String cpf, String email, String senha) {
         this.primeiro_nome = primeiro_nome;
         this.segundo_nome = segundo_nome;
         this.cpf = cpf;
         this.email = email;
         this.senha = senha;
-        this.role = role;
     }
 }

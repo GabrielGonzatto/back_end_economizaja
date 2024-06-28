@@ -22,7 +22,7 @@ public class CategoriaService {
     private ClienteService service;
 
     public void cadastrar(CadastrarCategoriaDTO categoria){
-        Cliente c = this.service.buscaCliente(categoria.cliente().getId());
+        Cliente c = this.service.buscaCliente(1L);
 
         this.repository.save(new Categoria(categoria.nome(), categoria.tipo(), true, c));
     }
