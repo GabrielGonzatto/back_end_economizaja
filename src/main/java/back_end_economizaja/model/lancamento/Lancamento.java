@@ -1,4 +1,4 @@
-package back_end_economizaja.model.receita;
+package back_end_economizaja.model.lancamento;
 
 import back_end_economizaja.model.categoria.Categoria;
 import back_end_economizaja.model.cliente.Cliente;
@@ -14,16 +14,19 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-@Table(name = "receita")
+@Table(name = "lancamento")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Receita {
+public class Lancamento {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
+
+    private String tipo;
 
     private String descricao;
 
@@ -31,7 +34,7 @@ public class Receita {
 
     private LocalDate data;
 
-    private Boolean recebida;
+    private Boolean paga_recebida;
 
     private Boolean fixa;
 
@@ -49,16 +52,16 @@ public class Receita {
     @JoinColumn(name = "id_cliente")
     private Cliente cliente;
 
-
-    @OneToMany(mappedBy = "receita")
+    @OneToMany(mappedBy = "lancamento")
     @JsonIgnore
     private List<Parcela> parcelas;
 
-    public Receita(String descricao, Double valor, LocalDate data, Boolean recebida, Boolean fixa, Boolean parcelada, Integer numero_de_parcelas, Boolean ativo, Categoria categoria, Cliente cliente) {
+    public Lancamento(String tipo, String descricao, Double valor, LocalDate data, Boolean paga_recebida, Boolean fixa, Boolean parcelada, Integer numero_de_parcelas, Boolean ativo, Categoria categoria, Cliente cliente) {
+        this.tipo = tipo;
         this.descricao = descricao;
         this.valor = valor;
         this.data = data;
-        this.recebida = recebida;
+        this.paga_recebida = paga_recebida;
         this.fixa = fixa;
         this.parcelada = parcelada;
         this.numero_de_parcelas = numero_de_parcelas;

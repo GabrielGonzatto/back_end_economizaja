@@ -13,10 +13,10 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
 
     public ArrayList<Categoria> findAll();
 
-    @Query(value = "select * from categoria where tipo='receita' and ativo=true;", nativeQuery = true)
-    ArrayList<Categoria> findCategoriaByReceita(/*int idcliente*/);
+    @Query(value = "select * from categoria where tipo='receita' and ativo=true and id_cliente=?1;", nativeQuery = true)
+    ArrayList<Categoria> findCategoriaByReceita(int idcliente);
 
 
-    @Query(value = "select * from categoria where tipo='despesa' and ativo=true;", nativeQuery = true)
-    ArrayList<Categoria> findCategoriaByDespesa(/*int idcliente*/);
+    @Query(value = "select * from categoria where tipo='despesa' and ativo=true and id_cliente=?1;", nativeQuery = true)
+    ArrayList<Categoria> findCategoriaByDespesa(int idcliente);
 }

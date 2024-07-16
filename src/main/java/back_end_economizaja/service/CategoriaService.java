@@ -1,17 +1,22 @@
 package back_end_economizaja.service;
 
+import back_end_economizaja.infra.security.TokenService;
 import back_end_economizaja.model.categoria.Categoria;
 import back_end_economizaja.model.categoria.CategoriaRepository;
-import back_end_economizaja.model.categoria.categoriaDTO.CadastrarCategoriaDTO;
-import back_end_economizaja.model.categoria.categoriaDTO.DadosCategoriaDTO;
-import back_end_economizaja.model.categoria.categoriaDTO.EditarCategoriaDTO;
+import back_end_economizaja.model.categoria.categoriaDTO.*;
 import back_end_economizaja.model.cliente.Cliente;
+import back_end_economizaja.model.lancamento.Lancamento;
+import back_end_economizaja.model.lancamento.LancamentoRepository;
+import back_end_economizaja.model.parcela.Parcela;
+import back_end_economizaja.model.parcela.ParcelaRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class CategoriaService {
@@ -19,10 +24,22 @@ public class CategoriaService {
     private CategoriaRepository repository;
 
     @Autowired
-    private ClienteService service;
+    private ClienteService clienteService;
 
-    public void cadastrar(CadastrarCategoriaDTO categoria){
-        Cliente c = this.service.buscaCliente(1L);
+    @Autowired
+    private TokenService tokenService;
+
+    @Autowired
+    private LancamentoRepository lancamentoRepository;
+
+    @Autowired
+    private ParcelaRepository parcelaRepository;
+
+    @Autowired
+    private LancamentoService lancamentoService;
+
+    public void cadastrar(CadastrarCategoriaDTO categoria, HttpServletRequest request){
+        Cliente c = this.clienteService.geraCliente(this.tokenService.recuperarIdDoToken(request));
 
         this.repository.save(new Categoria(categoria.nome(), categoria.tipo(), true, c));
     }
@@ -39,10 +56,25 @@ public class CategoriaService {
         this.repository.save(c);
     }
 
-    public ArrayList<DadosCategoriaDTO> listarCategoriasDeReceita(){
-        //Cliente c = this.service.buscaCliente(id);
+    public MaioresGastosMesCategoriaDTO maioresGastosMesCategorias (HttpServletRequest request) {
+        LocalDate dataDeHoje = LocalDate.now();
 
-        ArrayList<Categoria> categorias = this.repository.findCategoriaByReceita(/*c.getId().intValue()*/);
+        ArrayList<Lancamento> lancamentosDoMes = new ArrayList<>();
+        ArrayList<Parcela> parcelasDoMes =  new ArrayList<>();
+
+        lancamentosDoMes = this.lancamentoRepository.findAllLancamentosNaoParceladosDoMes(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+        parcelasDoMes = this.parcelaRepository.findAllParcelasDoMes(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+
+        ArrayList<MaioresGastosMesHomeDTO> maioresGastosMesHomeReceita = this.lancamentoService.calculaMaioresGastosMesHomeCategoria(lancamentosDoMes, parcelasDoMes, "receita");
+        ArrayList<MaioresGastosMesHomeDTO> maioresGastosMesHomeDespesa = this.lancamentoService.calculaMaioresGastosMesHomeCategoria(lancamentosDoMes, parcelasDoMes, "despesa");
+
+        return new MaioresGastosMesCategoriaDTO(maioresGastosMesHomeReceita, maioresGastosMesHomeDespesa);
+    }
+
+
+    public ArrayList<DadosCategoriaDTO> listarCategoriasDeReceita(HttpServletRequest request){
+        String id = this.tokenService.recuperarIdDoToken(request);
+        ArrayList<Categoria> categorias = this.repository.findCategoriaByReceita(Integer.valueOf(id));
         ArrayList<DadosCategoriaDTO> categoriaDTOS = new ArrayList<>();
 
         for (Categoria categoria : categorias){
@@ -52,10 +84,10 @@ public class CategoriaService {
         return categoriaDTOS;
     }
 
-    public ArrayList<DadosCategoriaDTO> listarCategoriasDeDespesa(/*Long id*/){
-        //Cliente c = this.service.buscaCliente(id);
+    public ArrayList<DadosCategoriaDTO> listarCategoriasDeDespesa(HttpServletRequest request){
+        String id = this.tokenService.recuperarIdDoToken(request);
 
-        ArrayList<Categoria> categorias = this.repository.findCategoriaByDespesa(/*c.getId().intValue()*/);
+        ArrayList<Categoria> categorias = this.repository.findCategoriaByDespesa(Integer.valueOf(id));
         ArrayList<DadosCategoriaDTO> categoriaDTOS = new ArrayList<>();
 
         for (Categoria categoria : categorias){
@@ -63,10 +95,6 @@ public class CategoriaService {
         }
 
         return categoriaDTOS;
-    }
-
-    public ArrayList<Categoria> listarTudoCategoriaTeste(){
-        return this.repository.findAll();
     }
 
 }

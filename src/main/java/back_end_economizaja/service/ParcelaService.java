@@ -1,9 +1,11 @@
 package back_end_economizaja.service;
 
+import back_end_economizaja.model.categoria.Categoria;
+import back_end_economizaja.model.categoria.categoriaDTO.EditarCategoriaDTO;
+import back_end_economizaja.model.lancamento.DTO.CadastrarLancamentoDTO;
+import back_end_economizaja.model.lancamento.Lancamento;
 import back_end_economizaja.model.parcela.Parcela;
 import back_end_economizaja.model.parcela.ParcelaRepository;
-import back_end_economizaja.model.receita.Receita;
-import back_end_economizaja.model.receita.receitaDTO.EditarReceitaDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +21,14 @@ public class ParcelaService {
         this.repository.save(parcela);
     }
 
-    public void cadastrarListaDeParcelas(Receita receita){
-        Double valor_de_cada_parcela = receita.getValor() / receita.getNumero_de_parcelas();
+    public void cadastrarListaDeParcelas(CadastrarLancamentoDTO lancamentoDTO, Long id){
+        Double valor_de_cada_parcela = lancamentoDTO.valor() / lancamentoDTO.numero_de_parcelas();
 
-        for(int i = 0; i < receita.getNumero_de_parcelas(); i++){
-            cadastrar(new Parcela(valor_de_cada_parcela, receita.getRecebida(), receita.getData().plusMonths(i + 1), i, true, receita));
+        Lancamento lancamento = new Lancamento();
+        lancamento.setId(id);
+
+        for(int i = 0; i < lancamentoDTO.numero_de_parcelas(); i++){
+            cadastrar(new Parcela(valor_de_cada_parcela, lancamentoDTO.paga_recebida(), lancamentoDTO.data().plusMonths(i), i, true, lancamento));
         }
     }
 
@@ -45,5 +50,16 @@ public class ParcelaService {
             p.setPaga_recebida(true);
             this.repository.save(p);
         }
+    }
+
+    public void pagarDespagarParcela(Long id){
+        Parcela parcela = this.repository.getReferenceById(id);
+
+        if (parcela.getPaga_recebida() == true) {
+            parcela.setPaga_recebida(false);
+        } else {
+            parcela.setPaga_recebida(true);
+        }
+        this.repository.save(parcela);
     }
 }

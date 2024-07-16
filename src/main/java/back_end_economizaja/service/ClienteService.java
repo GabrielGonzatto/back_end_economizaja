@@ -4,11 +4,9 @@ import back_end_economizaja.infra.security.TokenService;
 import back_end_economizaja.model.cliente.Cliente;
 import back_end_economizaja.model.cliente.ClienteRepository;
 import back_end_economizaja.model.cliente.DTO.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 
@@ -19,18 +17,16 @@ public class ClienteService{
     private ClienteRepository repository;
 
     @Autowired
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
-
-    @Autowired
     private TokenService tokenService;
 
     public RespostaLogin login (LoginClienteDTO cliente) {
         Cliente c = repository.findByEmailAndPassword(cliente.email());
+
         if (c != null){
-            Boolean b = bCryptPasswordEncoder.matches(cliente.senha(), c.getSenha());
+            Boolean b = cliente.senha().equals(c.getSenha());
 
             if (b == true) {
-                return new RespostaLogin(this.tokenService.gerarToken(c.getId()));
+                return this.tokenService.gerarToken(c.getId());
             }
             System.out.println("login incorreto");
         }
@@ -39,29 +35,38 @@ public class ClienteService{
     }
 
     public void cadastrar(CadastrarClienteDTO cliente){
-        Cliente novoCliente = new Cliente(cliente.primeiro_nome(), cliente.segundo_nome(), cliente.cpf(), cliente.email(), this.bCryptPasswordEncoder.encode(cliente.senha()));
+        Cliente novoCliente = new Cliente(cliente.primeiro_nome(), cliente.segundo_nome(), cliente.cpf(), cliente.email(), cliente.senha());
 
         this.repository.save(novoCliente);
     }
 
-    public void editar(EditarClienteDTO cliente){
-        Cliente c = buscaCliente(cliente.id());
-        c = this.repository.getReferenceById(c.getId());
+    public Boolean editar(EditarClienteDTO cliente, HttpServletRequest request){
+        Cliente cliente_banco = this.repository.getReferenceById(Long.valueOf(this.tokenService.recuperarIdDoToken(request)));
 
-        c.setPrimeiro_nome(cliente.primeiro_nome());
-        c.setSegundo_nome(cliente.segundo_nome());
-        c.setCpf(cliente.cpf());
-        c.setEmail(cliente.email());
-        c.setSenha(cliente.senha());
+        if (cliente_banco.getSenha().equals(cliente.senha())) {
+            cliente_banco.setPrimeiro_nome(cliente.primeiro_nome());
+            cliente_banco.setSegundo_nome(cliente.segundo_nome());
+            cliente_banco.setCpf(cliente.cpf());
+            //cliente_banco.setSenha(cliente.nova_senha());
+
+            return true;
+        }
+        return false;
     }
 
-    public DadosCLienteDTO listarDadosCliente(Long id){
-        Cliente c = buscaCliente(id);
+    public DadosCLienteDTO listarDadosCliente(HttpServletRequest request){
+        Cliente c = buscaCliente(this.tokenService.recuperarIdDoToken(request));
         return new DadosCLienteDTO(c.getPrimeiro_nome(), c.getSegundo_nome(), c.getCpf(), c.getEmail());
     }
 
-    public Cliente buscaCliente(Long id){
-        return repository.findById(id.intValue());
+    public Cliente buscaCliente(String id){
+        return repository.findById(Integer.parseInt(id));
+    }
+
+    public Cliente geraCliente(String id){
+        Cliente cliente = new Cliente();
+        cliente.setId(Long.parseLong(id));
+        return cliente;
     }
 
     public ArrayList<Cliente> listarTudoClienteTeste(){

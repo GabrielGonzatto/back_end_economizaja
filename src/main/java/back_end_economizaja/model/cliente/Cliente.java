@@ -1,7 +1,7 @@
 package back_end_economizaja.model.cliente;
 
 import back_end_economizaja.model.categoria.Categoria;
-import back_end_economizaja.model.receita.Receita;
+import back_end_economizaja.model.lancamento.Lancamento;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -46,7 +46,7 @@ public class Cliente{
 
     @OneToMany(mappedBy = "cliente")
     @JsonIgnore
-    private List<Receita> receitas;
+    private List<Lancamento> lancamentos;
 
     public Cliente(String primeiro_nome, String segundo_nome, String cpf, String email, String senha) {
         this.primeiro_nome = primeiro_nome;

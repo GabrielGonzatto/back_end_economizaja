@@ -1,6 +1,6 @@
 package back_end_economizaja.model.parcela;
 
-import back_end_economizaja.model.receita.Receita;
+import back_end_economizaja.model.lancamento.Lancamento;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -31,23 +31,17 @@ public class Parcela {
 
     private Boolean ativo;
 
-    @ManyToOne
-    @JoinColumn(name = "id_receita")
-    private Receita receita;
 
-    public Parcela(Double valor, Boolean paga_recebida, LocalDate data, Integer contador, Boolean ativo, Receita receita) {
+    @ManyToOne
+    @JoinColumn(name = "id_lancamento")
+    private Lancamento lancamento;
+
+    public Parcela(Double valor, Boolean paga_recebida, LocalDate data, Integer contador, Boolean ativo, Lancamento lancamento) {
         this.valor = valor;
         this.paga_recebida = paga_recebida;
         this.data = data;
         this.contador = contador;
         this.ativo = ativo;
-        this.receita = receita;
-    }
-
-    public Parcela(Boolean paga_recebida, Integer contador, Boolean ativo, Receita receita) {
-        this.paga_recebida = paga_recebida;
-        this.contador = contador;
-        this.ativo = ativo;
-        this.receita = receita;
+        this.lancamento = lancamento;
     }
 }

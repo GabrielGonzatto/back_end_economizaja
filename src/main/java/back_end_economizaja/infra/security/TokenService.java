@@ -1,9 +1,13 @@
 package back_end_economizaja.infra.security;
 
+import back_end_economizaja.model.cliente.DTO.RespostaLogin;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.Instant;
 import java.util.Map;
@@ -17,9 +21,9 @@ public class TokenService {
     @Autowired
     private JwtDecoder jwtDecoder;
 
-    public String gerarToken (Long id) {
+    public RespostaLogin gerarToken (Long id) {
         var tempo_agora = Instant.now();
-        var expiracao_token = 1L;
+        var expiracao_token = 7200L;
 
         var claims = JwtClaimsSet.builder()
                 .issuer("EconomizaJá")
@@ -31,7 +35,7 @@ public class TokenService {
 
         var token_jwt = jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
 
-        return token_jwt;
+        return new RespostaLogin(token_jwt, expiracao_token);
     }
 
     public String recuperarIdDoToken (HttpServletRequest request) {

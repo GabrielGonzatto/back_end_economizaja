@@ -1,12 +1,15 @@
 package back_end_economizaja.controller;
 
+import back_end_economizaja.infra.security.TokenService;
 import back_end_economizaja.model.cliente.DTO.*;
 import back_end_economizaja.service.ClienteService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -15,6 +18,9 @@ public class ClienteController {
 
     @Autowired
     private ClienteService service;
+
+    @Autowired
+    private TokenService tokenService;
 
     @PostMapping("/login")
     @Transactional
@@ -31,13 +37,17 @@ public class ClienteController {
 
     @PutMapping("/editar")
     @Transactional
-    public ResponseEntity<EditarClienteDTO> editar(@RequestBody EditarClienteDTO cliente){
-        this.service.editar(cliente);
-        return ResponseEntity.ok(cliente);
+    public ResponseEntity<Map<String, String>> editar(@RequestBody @Valid EditarClienteDTO cliente, HttpServletRequest request){
+        Boolean b = this.service.editar(cliente, request);
+
+        if (b == true) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.badRequest().build();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<DadosCLienteDTO> listarDadosCliente(@PathVariable Long id){
-        return ResponseEntity.ok(this.service.listarDadosCliente(id));
+    @GetMapping("/listarDadosCliente")
+    public ResponseEntity<DadosCLienteDTO> listarDadosCliente(HttpServletRequest request){
+        return ResponseEntity.ok(this.service.listarDadosCliente(request));
     }
 }

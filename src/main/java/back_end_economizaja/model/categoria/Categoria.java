@@ -1,7 +1,7 @@
 package back_end_economizaja.model.categoria;
 
 import back_end_economizaja.model.cliente.Cliente;
-import back_end_economizaja.model.receita.Receita;
+import back_end_economizaja.model.lancamento.Lancamento;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -38,7 +38,11 @@ public class Categoria {
 
     @OneToMany(mappedBy = "categoria")
     @JsonIgnore
-    private List<Receita> receitas;
+    private List<Lancamento> lancamentos;
+
+    public Categoria(Long id) {
+        this.id = id;
+    }
 
     public Categoria(String nome, String tipo, Boolean ativo, Cliente cliente) {
         this.nome = nome;
