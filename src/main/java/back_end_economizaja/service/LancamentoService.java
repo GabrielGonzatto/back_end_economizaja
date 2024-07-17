@@ -2,18 +2,13 @@ package back_end_economizaja.service;
 
 import back_end_economizaja.infra.security.TokenService;
 import back_end_economizaja.model.categoria.Categoria;
-import back_end_economizaja.model.categoria.categoriaDTO.DadosCategoriaDTO;
 import back_end_economizaja.model.categoria.categoriaDTO.MaioresGastosMesHomeDTO;
 import back_end_economizaja.model.cliente.ClienteRepository;
-import back_end_economizaja.model.lancamento.DTO.CadastrarLancamentoDTO;
-import back_end_economizaja.model.lancamento.DTO.DadosHome;
-import back_end_economizaja.model.lancamento.DTO.DadosLancamentoDTO;
-import back_end_economizaja.model.lancamento.DTO.ListagemHomePagarReceber;
+import back_end_economizaja.model.lancamento.DTO.*;
 import back_end_economizaja.model.lancamento.Lancamento;
 import back_end_economizaja.model.lancamento.LancamentoRepository;
 import back_end_economizaja.model.parcela.Parcela;
 import back_end_economizaja.model.parcela.ParcelaRepository;
-import back_end_economizaja.model.parcela.parcelaDTO.DadosParcelaDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -60,6 +55,70 @@ public class LancamentoService {
         }
     }
 
+    public void deletar (ListagemLancamentosPagarReceber lancamento) {
+        if (lancamento.tipo().equals("lancamento")) {
+            Lancamento l = this.repository.getReferenceById(lancamento.id());
+            l.setAtivo(false);
+
+            this.repository.save(l);
+        }
+
+        if (lancamento.tipo().equals("parcela")) {
+            Parcela p = this.parcelaRepository.getReferenceById(lancamento.id());
+            p.setAtivo(false);
+
+            this.parcelaRepository.save(p);
+        }
+    }
+
+    public DadosRelatorios dadosRelatorios (DataLancamentosConsultaDTO dataLancamento, HttpServletRequest request) {
+        LocalDate dataDeHoje = LocalDate.now();
+
+        ArrayList<Lancamento> lancamentos = new ArrayList<>();
+        ArrayList<Parcela> parcelas = new ArrayList<>();
+
+        ArrayList<ListagemLancamentosPagarReceber> receitas = new ArrayList<>();
+        ArrayList<ListagemLancamentosPagarReceber> despesas = new ArrayList<>();
+
+        if (dataLancamento.dataLancamentoConsulta().equals("hoje")) {
+            lancamentos = this.repository.findAllLancamentosNaoParceladosDeHoje(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getDayOfMonth(), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+            parcelas = this.parcelaRepository.findAllParcelasDeHoje(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getDayOfMonth(), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+        }
+        if (dataLancamento.dataLancamentoConsulta().equals("mes")) {
+            lancamentos = this.repository.findAllLancamentosNaoParceladosDoMes(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+            parcelas = this.parcelaRepository.findAllParcelasDoMes(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+        }
+        if (dataLancamento.dataLancamentoConsulta().equals("ano")) {
+            lancamentos = this.repository.findAllLancamentosNaoParceladosDoAno(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getYear());
+            parcelas = this.parcelaRepository.findAllParcelasDoAno(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getYear());
+        }
+        if (dataLancamento.dataLancamentoConsulta().equals("dataEspecifica")) {
+            lancamentos = this.repository.findAllLancamentosNaoParceladosEntreDatas(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataLancamento.dataInicial(), dataLancamento.dataFinal());
+            parcelas = this.parcelaRepository.findAllLancamentosNaoParceladosEntreDatas(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataLancamento.dataInicial(), dataLancamento.dataFinal());
+
+        }
+
+        for (Lancamento lancamento : lancamentos) {
+            if (lancamento.getTipo().equals("receita")) {
+                receitas.add(new ListagemLancamentosPagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
+            }
+            if (lancamento.getTipo().equals("despesa")) {
+                despesas.add(new ListagemLancamentosPagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
+            }
+        }
+
+        for (Parcela parcela : parcelas) {
+            if (parcela.getLancamento().getTipo().equals("receita")) {
+                receitas.add(new ListagemLancamentosPagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
+            }
+            if (parcela.getLancamento().getTipo().equals("despesa")) {
+                despesas.add(new ListagemLancamentosPagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
+            }
+        }
+
+        return new DadosRelatorios(ordenarPorData(receitas), ordenarPorData(despesas));
+    }
+
     public DadosHome dadosHome(HttpServletRequest request) {
         LocalDate dataDeHoje = LocalDate.now();
         LocalDate dataAtrasados = LocalDate.of(dataDeHoje.getYear(), dataDeHoje.getMonth(), 1);
@@ -82,11 +141,11 @@ public class LancamentoService {
         parcelasAtrasadas = this.parcelaRepository.findAllParcelasAtrasadas(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), String.valueOf(dataAtrasados));
         parcelasPagas = this.parcelaRepository.findAllParcelasPagas(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)));
 
-        ArrayList<ListagemHomePagarReceber> contasAPagar = new ArrayList<>();
-        ArrayList<ListagemHomePagarReceber> contasAPagarAtrasadas = new ArrayList<>();
+        ArrayList<ListagemLancamentosPagarReceber> contasAPagar = new ArrayList<>();
+        ArrayList<ListagemLancamentosPagarReceber> contasAPagarAtrasadas = new ArrayList<>();
 
-        ArrayList<ListagemHomePagarReceber> contasAReceber = new ArrayList<>();
-        ArrayList<ListagemHomePagarReceber> contasAReceberAtrasadas = new ArrayList<>();
+        ArrayList<ListagemLancamentosPagarReceber> contasAReceber = new ArrayList<>();
+        ArrayList<ListagemLancamentosPagarReceber> contasAReceberAtrasadas = new ArrayList<>();
 
         primeiro_nome = this.clienteRepository.findNameClienteById(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)));
 
@@ -153,11 +212,11 @@ public class LancamentoService {
 
         for (Lancamento lancamento : lancamentosDoMes) {
             if (lancamento.getTipo().equals("receita") && lancamento.getPaga_recebida() == false) {
-                contasAReceber.add(new ListagemHomePagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
+                contasAReceber.add(new ListagemLancamentosPagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
             }
 
             if (lancamento.getTipo().equals("despesa") && lancamento.getPaga_recebida() == false) {
-                contasAPagar.add(new ListagemHomePagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
+                contasAPagar.add(new ListagemLancamentosPagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
             }
 
 
@@ -165,36 +224,63 @@ public class LancamentoService {
 
         for (Lancamento lancamento : lancamentosAtrasados) {
             if (lancamento.getTipo().equals("receita")  && lancamento.getPaga_recebida() == false) {
-                contasAReceberAtrasadas.add(new ListagemHomePagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
+                contasAReceberAtrasadas.add(new ListagemLancamentosPagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
             }
 
             if (lancamento.getTipo().equals("despesa")  && lancamento.getPaga_recebida() == false) {
-                contasAPagarAtrasadas.add(new ListagemHomePagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
+                contasAPagarAtrasadas.add(new ListagemLancamentosPagarReceber(lancamento.getId(), lancamento.getDescricao(), "lancamento", lancamento.getData(), lancamento.getValor(), lancamento.getPaga_recebida()));
             }
         }
 
         for (Parcela parcela : parcelasDoMes) {
             if (parcela.getLancamento().getTipo().equals("receita") && parcela.getLancamento().getPaga_recebida() == false) {
-                contasAReceber.add(new ListagemHomePagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
+                contasAReceber.add(new ListagemLancamentosPagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
             }
             if (parcela.getLancamento().getTipo().equals("despesa") && parcela.getLancamento().getPaga_recebida() == false) {
-                contasAPagar.add(new ListagemHomePagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
+                contasAPagar.add(new ListagemLancamentosPagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
             }
         }
 
         for (Parcela parcela : parcelasAtrasadas) {
             if (parcela.getLancamento().getTipo().equals("receita") && parcela.getLancamento().getPaga_recebida() == false) {
-                contasAReceberAtrasadas.add(new ListagemHomePagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
+                contasAReceberAtrasadas.add(new ListagemLancamentosPagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
             }
             if (parcela.getLancamento().getTipo().equals("despesa") && parcela.getLancamento().getPaga_recebida() == false) {
-                contasAPagarAtrasadas.add(new ListagemHomePagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
+                contasAPagarAtrasadas.add(new ListagemLancamentosPagarReceber(parcela.getId(), parcela.getLancamento().getDescricao(), "parcela", parcela.getData(), parcela.getValor(), parcela.getPaga_recebida()));
             }
         }
 
         return new DadosHome(primeiro_nome, arruma_casas_valor(saldoGeral, 2), arruma_casas_valor(receitaMensal, 2), arruma_casas_valor(despesaMensal, 2), ordenarPorData(contasAPagar), ordenarPorData(contasAPagarAtrasadas), ordenarPorData(contasAReceber), ordenarPorData(contasAReceberAtrasadas), calculaMaioresGastosMesHomeCategoria(lancamentosDoMes, parcelasDoMes, "despesa"));
     }
 
-    public void pagarDespagarLancamento(ListagemHomePagarReceber item) {
+    public ArrayList<ListagemLancamentosPagarReceber> getLancamentosData (DataLancamentosConsultaDTO dataLancamento, HttpServletRequest request) {
+        LocalDate dataDeHoje = LocalDate.now();
+
+        ArrayList<Lancamento> lancamentos = new ArrayList<>();
+        ArrayList<Parcela> parcelas = new ArrayList<>();
+
+        if (dataLancamento.dataLancamentoConsulta().equals("hoje")) {
+            lancamentos = this.repository.findAllLancamentosNaoParceladosDeHoje(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getDayOfMonth(), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+            parcelas = this.parcelaRepository.findAllParcelasDeHoje(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getDayOfMonth(), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+        }
+        if (dataLancamento.dataLancamentoConsulta().equals("mes")) {
+            lancamentos = this.repository.findAllLancamentosNaoParceladosDoMes(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+            parcelas = this.parcelaRepository.findAllParcelasDoMes(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getMonthValue(), dataDeHoje.getYear());
+        }
+        if (dataLancamento.dataLancamentoConsulta().equals("ano")) {
+            lancamentos = this.repository.findAllLancamentosNaoParceladosDoAno(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getYear());
+            parcelas = this.parcelaRepository.findAllParcelasDoAno(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataDeHoje.getYear());
+        }
+        if (dataLancamento.dataLancamentoConsulta().equals("dataEspecifica")) {
+            lancamentos = this.repository.findAllLancamentosNaoParceladosEntreDatas(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataLancamento.dataInicial(), dataLancamento.dataFinal());
+            parcelas = this.parcelaRepository.findAllLancamentosNaoParceladosEntreDatas(Integer.parseInt(this.tokenService.recuperarIdDoToken(request)), dataLancamento.dataInicial(), dataLancamento.dataFinal());
+
+        }
+
+        return dataLancamento.tranformaDTO(lancamentos, parcelas);
+    }
+
+    public void pagarDespagarLancamento(ListagemLancamentosPagarReceber item) {
         if (item.tipo().equals("lancamento")) {
             Lancamento lancamento = this.repository.getReferenceById(item.id());
 
@@ -202,7 +288,11 @@ public class LancamentoService {
                 lancamento.setPaga_recebida(false);
             } else {
                 lancamento.setPaga_recebida(true);
+                if (lancamento.getFixa()) {
+                    this.repository.save(new Lancamento(lancamento.getTipo(), lancamento.getDescricao(), lancamento.getValor(), lancamento.getData().plusMonths(1), false, true, lancamento.getParcelada(), lancamento.getNumero_de_parcelas(), lancamento.getAtivo(), lancamento.getCategoria(), lancamento.getCliente()));
+                }
             }
+
             this.repository.save(lancamento);
         }
 
@@ -294,10 +384,10 @@ public class LancamentoService {
         return new ArrayList<>(categorias);
     }
 
-    private ArrayList<ListagemHomePagarReceber> ordenarPorData (ArrayList<ListagemHomePagarReceber> lista) {
-        Collections.sort(lista, new Comparator<ListagemHomePagarReceber>() {
+    private ArrayList<ListagemLancamentosPagarReceber> ordenarPorData (ArrayList<ListagemLancamentosPagarReceber> lista) {
+        Collections.sort(lista, new Comparator<ListagemLancamentosPagarReceber>() {
             @Override
-            public int compare(ListagemHomePagarReceber o1, ListagemHomePagarReceber o2) {
+            public int compare(ListagemLancamentosPagarReceber o1, ListagemLancamentosPagarReceber o2) {
                 return o1.data().compareTo(o2.data());
             }
         });

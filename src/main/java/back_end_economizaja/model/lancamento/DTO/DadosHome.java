@@ -7,5 +7,5 @@ import back_end_economizaja.model.parcela.parcelaDTO.DadosParcelaDTO;
 
 import java.util.ArrayList;
 
-public record DadosHome(String nome, Double saldoGeral, Double receitaMensal, Double despesaMensal, ArrayList<ListagemHomePagarReceber> contasAPagar, ArrayList<ListagemHomePagarReceber> contasAPagarAtrasadas, ArrayList<ListagemHomePagarReceber> contasAReceber, ArrayList<ListagemHomePagarReceber> contasAReceberAtrasadas, ArrayList<MaioresGastosMesHomeDTO> maioresGastos) {
+public record DadosHome(String nome, Double saldoGeral, Double receitaMensal, Double despesaMensal, ArrayList<ListagemLancamentosPagarReceber> contasAPagar, ArrayList<ListagemLancamentosPagarReceber> contasAPagarAtrasadas, ArrayList<ListagemLancamentosPagarReceber> contasAReceber, ArrayList<ListagemLancamentosPagarReceber> contasAReceberAtrasadas, ArrayList<MaioresGastosMesHomeDTO> maioresGastos) {
 }
