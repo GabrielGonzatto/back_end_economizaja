@@ -277,7 +277,7 @@ public class LancamentoService {
 
         }
 
-        return dataLancamento.tranformaDTO(lancamentos, parcelas);
+        return ordenarPorData(dataLancamento.tranformaDTO(lancamentos, parcelas));
     }
 
     public void pagarDespagarLancamento(ListagemLancamentosPagarReceber item) {
